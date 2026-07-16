@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 public class NotificationConsumer {
 
     private final NotificationRepository notificationRepository;
+    private final EmailService emailService;
 
     @RabbitListener(queues = "${notification.rabbitmq.queue}")
     public void handleNotification(NotificationMessage message) {
@@ -30,13 +31,27 @@ public class NotificationConsumer {
             return;
         }
 
-        // Step 5 will replace this block with actual SMTP sending via JavaMailSender.
-        log.info("Simulating email send to {} — subject: '{}'",
-                notification.getRecipient(), notification.getSubject());
+        try {
+            emailService.sendEmail(
+                    notification.getRecipient(),
+                    notification.getSubject(),
+                    notification.getBody()
+            );
 
-        notification.setStatus(NotificationStatus.SENT);
-        notificationRepository.save(notification);
+            notification.setStatus(NotificationStatus.SENT);
+            notificationRepository.save(notification);
+            log.info("Notification {} marked as SENT", notification.getId());
 
-        log.info("Notification {} marked as SENT", notification.getId());
+        } catch (Exception e) {
+            log.error("Failed to send notification {}: {}", notification.getId(), e.getMessage());
+
+            notification.setStatus(NotificationStatus.FAILED);
+            notification.setFailureReason(e.getMessage());
+            notificationRepository.save(notification);
+
+            // Rethrow so RabbitMQ's retry/dead-letter mechanism still fires.
+            // Without this, the message would be ack'd and silently lost on failure.
+            throw e;
+        }
     }
 }

@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
-    // NotificationProducer will be injected here in Step 4 to publish to RabbitMQ
+    private final NotificationProducer notificationProducer;
 
     @Override
     public NotificationResponse createNotification(NotificationRequest request) {
@@ -31,7 +31,7 @@ public class NotificationServiceImpl implements NotificationService {
         Notification saved = notificationRepository.save(notification);
         log.info("Saved notification {} with status PENDING", saved.getId());
 
-        // Step 4 will add: notificationProducer.publish(saved.getId());
+        notificationProducer.publish(saved.getId());
 
         return mapToResponse(saved);
     }

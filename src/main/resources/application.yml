@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: notification-service
+
+  config:
+    import: optional:file:.env[.properties]
+
+  mongodb:
+    uri: ${MONGODB_URI}
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+  mail:
+    host: sandbox.smtp.mailtrap.io
+    port: 2525
+    username: ${MAIL_USERNAME:changeme}
+    password: ${MAIL_PASSWORD:changeme}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+notification:
+  rabbitmq:
+    exchange: notification.exchange
+    queue: notification.queue
+    routing-key: notification.routingkey
+    dlq: notification.queue.dlq
+    dlx: notification.exchange.dlx
+
